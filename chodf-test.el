@@ -152,3 +152,32 @@
 	(should (= (cdr (should-error (chodf-sync! it)
 				      :type '(chodf-error)))
 		   5))))))
+
+(ert-deftest chodf-loop-t ()
+  (let* ((a 0)
+	 (f (lambda () (let ((d (chodf-new)))
+			 (run-at-time
+			  0.01 nil (lambda ()
+				     (if (= (cl-incf a) 1000)
+					 (setq a "fin"))
+				     (chodf-call d 1)))
+			 d))))
+    (chodf-sync! (chodf-loop 1000 f))
+    (should (string= a "fin"))))
+
+(my-time (dotimes (_ 20000)))
+
+(ert-deftest chodf-repeat-t ()
+  (let ((f (lambda () (dotimes (_ 20000)))))
+    (chodf-repeat 2000 f)))
+
+(let ((f (let ((i 0)) (lambda () (let ((d (chodf-new)))
+				   (run-with-timer 0.01 nil
+						   (lambda ()
+						     (message (format "%s" (cl-incf i)))
+						     (if (< i 50)
+							 (chodf-fail d 1)
+						       (chodf-call d t))))
+				   d)))))
+  (chodf-next (chodf-retry 100 f 0.1)
+	      (lambda (ms) (print ms))))
