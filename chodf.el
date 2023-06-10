@@ -33,6 +33,10 @@
 ;; [https://cho45.stfuawsc.com/jsdeferred/doc/intro.en.html]
 ;; [https://cho45.stfuawsc.com/jsdeferred/]
 
+(eval-when-compile
+  (require 'cl-lib)
+  (require 'seq))
+
 (defun chodf-ok (x)
   "Default callback function"
   x)
@@ -61,8 +65,7 @@ if OKNG is `:ok', then obj's OKCB is FUN, otherwise NGCB."
     new))
 
 (defun chodf-next (odf fun)
-  "Creates new deferred and sets FUN as its callback, \
-then connect ODF to it"
+  "Creates new deferred and sets FUN as its callback then connect ODF to it"
   (chodf--post odf :ok fun))
 (defun chodf-error (odf fun)
   "Creates new deferred and sets FUN as its errback, then connect ODF to it.
@@ -70,8 +73,9 @@ if FUN does not signal an error but just returns normal value,
 deferred treats the give error is recovery and continue chain"
   (chodf--post odf :ng fun))
 (defun chodf-ner (odf okfn ngfn)
-  "Creates new deferred and sets okcb to OKFN, ngcb to NGFN, then connect ODF to it.
-this function doens't exist in jsdeferred, I add it just for code simplification."
+  "Creates new deferred and sets okcb to OKFN, ngcb to NGFN,
+then connect ODF to it. this function doens't exist in jsdeferred.
+I add it just for code simplification."
   (let ((new (chodf-new)))
     (setf (chodf-okcb new) okfn)
     (setf (chodf-ngcb new) ngfn)
@@ -81,8 +85,8 @@ this function doens't exist in jsdeferred, I add it just for code simplification
 (defun chodf--fire (odf okng value)
   "[internal] Executing deferred callback chosen by OKNG.
 OKNG can either be `:ok' or `:ng'. VALUE is arg for callback.
-If an error is signaled by ok or ng function, and deferred's `n' exists, then \
-the next deferred object's ngcb function will be called"
+If an error is signaled by ok or ng function, and deferred's `n' exists,
+then the next deferred object's ngcb function will be called"
   (cl-assert (member okng '(:ok :ng)))
   (let ((next :ok))
     (condition-case err
@@ -126,7 +130,7 @@ Error is raised if it is not processed within deferred chain D."
 
 (defun chodf-nextx (&optional fun wait-time)
   "Shorthand for creating new deferred which is called after current task.
-If WAIT-TIME is specified, deferred will start after WAIT-TIME seconds, \
+If WAIT-TIME is specified, deferred will start after WAIT-TIME seconds,
 otherwise it is ZERO."
   (setq wait-time (or wait-time 0))
   (let ((d (chodf-new)))
@@ -165,8 +169,8 @@ the original function's last arg must be a callback"
 
 (defun chodf-parallel (&rest fun-or-d-ls)
   "Parallel wraps up deferredlist to one deferred.
-FUN-OR-D-LS's element can be either function (include symbol) or deferred object.
-return value is a vector, each cell corresponds to function or deferred object in arglist.
+FUN-OR-D-LS's element can be function (include symbol) or deferred object.
+return value is a vector, each cell corresponds to place in arglist.
 This is useful when some asynchronous resources are required."
   (let* ((ret (chodf-new))
 	 (len (length fun-or-d-ls))
@@ -191,7 +195,8 @@ This is useful when some asynchronous resources are required."
 (defun chodf-chain (&rest funs-or-err)
   "Constructs deferred chain and return its deferred.
 Shorthand for construct deferred chains.
-If function is after a `:err' symbol, then it will be an errback, otherwise a callback"
+If function is after a `:err' symbol, then it will be an errback
+otherwise a callback"
   (let ((chain (chodf-nextx))
 	(flag nil))
     (mapc (lambda (obj)
@@ -206,9 +211,9 @@ If function is after a `:err' symbol, then it will be an errback, otherwise a ca
     chain))
 
 (defun chodf-earlier (&rest chodfs)
-  "Continue process when one deferred in deferredlist has completed. \
+  "Continue process when one deferred in deferredlist has completed.
 Others will be canceled.
-return value is cons (index . value), index is the earlist deferred's order in arglist.
+return value is cons (i . v), i is the earlist deferred's order in arglist.
 parallel ('and' processing) <=> earlier ('or' processing)."
   (let* ((ret (chodf-new))
 	 (num 0)
@@ -259,10 +264,11 @@ Default value is 0.01, which means 10ms.")
 
 (defun chodf-repeat (n fun)
   "Loop `n` times with `fun`.
-This function automatically returns UI-control to emacs \
+This function automatically returns UI-control to emacs
 if the loop spends over `chodf-repeat-maxtime'.
 This is useful for huge loop not to block emacs UI.
-This function can't wait a deferred returned by loop function, compared with chodf-loop."
+This function can't wait a deferred returned by loop function,
+compared with chodf-loop."
   (let ((i 0) it)
     (when (> n 0)
       (chodf-nextx
