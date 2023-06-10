@@ -217,27 +217,3 @@
     (should (eq t (chodf-sync! it)))
     (setq it (chodf-retry 9 f 0.01))
     (should (= (cdr (should-error (chodf-sync! it))) 1))))
-
-;; strange zero argument call: (chodf-fail)
-;; it won't signal an error or print "2" by the test above
-;; (defun chodf-retry (cnt fun &optional wait)
-;;   "Try func (returns Deferred) till it finish without exceptions.
-;; If specified, WAIT is waiting time between each try, otherwise `chodf-ticktime'"
-;;   (setq wait (or wait chodf-ticktime))
-;;   (let ((d (chodf-new))
-;; 	retry)
-;;     (setq retry
-;; 	  (lambda ()
-;; 	    (let ((m (funcall fun)))
-;; 	      (chodf-ner
-;; 	       m (lambda (res)
-;; 		   (chodf-call d res))
-;; 	       (lambda (e)
-;; 		 (print "opps")
-;; 		 (if (<= (cl-decf cnt) 0)
-;; 		     (progn (print e)
-;; 			    (chodf-fail)
-;; 			    (print "2"))
-;; 		   (run-at-time wait nil retry)))))))
-;;     (run-at-time 0 nil retry)
-;;     d))
