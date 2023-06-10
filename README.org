@@ -1,0 +1,45 @@
+* chodf -- cho45's jsdeferred implemented in elisp
+
+** 简介
+
+=chodf= 是一个简单的 elisp 异步库，提供了类似 javascript Promise 的功能：编写线性的异步代码，避免回调地狱。 =chodf= 完全参考了 cho45 的 [[https://github.com/cho45/jsdeferred][JSDeferred]]，部分参考并借鉴已有的 emacs 实现：[[https://github.com/kiwanami/emacs-deferred][emacs-deferred]]。
+
+相比 emacs-deferred，chodf 的实现只有 300 行左右，而且没有定义一个宏，方便阅读和理解。我不太建议在新的 elisp 项目中使用 chodf，当前它还过于原始，而 emacs-deferred 已有十余年历史，稳定性得到了检验。
+
+读者可以阅读[[https://github.com/RubyLouvre][司徒正美]]的《JavaScript框架设计》来了解 JSDeferred 原理。
+
+** API
+
+- =chodf-ticktime= ，指定 =chodf-loop= ， =chodf-repeat= 和 =chodf-retry= 两次调用之间的间隔
+- =chodf-repeat-maxtime= ，指定 =chodf-repeat= 某次执行最多用时
+- =(chodf-new)= ，创建一个 deferred 对象
+- =(chodf-obcb odf)= ，获取 deferred 对象的成功回调函数
+- =(chodf-ngcb odf)= ，获取 deferred 对象的失败回调函数
+- =(chodf-n odf)= ，获取 deferred 对象指向的下一个 deferred 对象
+- =(chodf-ok x)= ，默认的成功回调函数
+- =(chodf-ng (err . val))= ，默认的失败回调函数，它的实现为 =(signal err val)=
+- =(chodf-next odf fun)= ，创建一个新的 deferred 对象，使其 =okcb= 为 =fun= ，且令 =odf= 指向它
+- =(chodf-error odf fun)= ，创建一个新的 deferred 对象，使其 =ngcb= 为 =fun= ，且令 =odf= 指向它
+- =(chodf-ner odf okfn ngfn)= ， 合并 =chodf-next= 和 =chodf-error= 的功能
+- =(chodf-call odf val)= ，使用 val 启动成功调用链
+- =(chodf-fail odf val)= ，使用 val 启动失败调用链
+- =(chodf-sync! odf)= ，同步等待 =odf= 的回调被执行，用于测试或调试
+- =(chodf-nextx &optional fun wait-time)= ，启动调用链，可指定首个 deferred 对象的成功回调和启动前的延时
+- =(chodf-wait n)= ，等待 n 秒后执行调用链
+- =(chodf-connect fun &optional testfn errtype)= ，将普通函数包装为返回 deferred 对象的函数
+- =(chodf-parallel &rest fun-or-d)= ，同时开始多个 deferred 函数或 deferred 对象
+- =(chodf-chain &rest funs-or-err)= ，顺序进行多个异步过程
+- =(chodf-earlier &rest chodfs)= ，等待多个 deferred 对象并选取最先返回的那个
+- =(chodf-loop n fun)= ，提供非阻塞的循环
+- =(chodf-repeat n fun)= ，类似 =chodf-loop= ，但只接受普通函数
+- =(chodf-retry n fun &optional wait)= ，重复尝试直到 =fun= 成功
+
+** 例子
+
+可前往 chodf-test.el 了解简单用法。
+
+若读者对 chodf 的实际使用感兴趣，可以发 issue 告诉我，我会补充一些实际例子。
+
+** 注意
+
+异步链条执行过程中会捕获所有的 error，这也包括函数参数数量不对或类型不对的情况。对于这一点可以使用 byte-compile 编译文件来观察是否存在 warning。
